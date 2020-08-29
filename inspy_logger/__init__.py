@@ -1,10 +1,7 @@
 #!/usr/bin/env python3
 import logging, colorlog
+from colorlog import ColoredFormatter
 from logging import DEBUG, INFO, WARNING, getLogger, Logger
-
-
-started = False
-base_logger = None
 
 LEVELS = ["debug", "info", "warning"]
 
@@ -23,30 +20,15 @@ class InspyLogger(Logger):
 
         _log.setLevel(_)
 
-    def start(self):
-        global started, base_logger
-        """
-
-        Start a formatted root-logger
-
-        :type name: str
-        :param debug: Boolean - If True logger will start in at debug level. This is most useful if you're trying to see
-                                the internal goings-on immediately on starting the logger.
-
-        :param name: str - The name you want to give to the root logger
-
-        """
-
-        if started:
-            base_logger.warning(
+    def __start__(self):
+        if self.started:
+            self.device.warning(
                 "There already is a base logger for this program. I am using it to deliever this message."
             )
             return None
 
-        from colorlog import ColoredFormatter
-
         formatter = ColoredFormatter(
-            "%(bold_cyan)s%(asctime)-s%(reset)s%(log_color)s::%(module)s.%(name)-14s::%(levelname)-10s%(reset)s%("
+            "%(bold_cyan)s%(asctime)-s%(reset)s%(log_color)s::.%(name)s%(module)s-14s::%(levelname)-10s%(reset)s%("
             "blue)s%(message)-s",
             datefmt=None,
             reset=True,
@@ -65,14 +47,29 @@ class InspyLogger(Logger):
         self.device.addHandler(self.main_handler)
         self.adjust_level(self.root_name, self.l_lvl)
         self.device.info(f"Logger started for %s" % self.root_name)
-        started = True
-        base_logger = self.device
-        return self.device
+        self.started = True
 
     def __init__(self, device_name, log_level):
+        """
+        Starts a colored and formatted logging device for you.
+
+        Starts a colored and formatted logging device for you. No need to worry about handlers, etc
+
+        Args:
+
+            device_name (str): A string containing the name you'd like to choose for the root logger
+
+            log_level (str): A string containing the name of the level you'd like InspyLogger to be limited to.
+            You can choose between:
+              - debug
+              - info
+              - warning
+    """
+
         if log_level is None:
             log_level = "info"
         self.l_lvl = log_level.lower()
         self.root_name = device_name
-        self.start()
-        print(dir(self))
+        self.started = False
+        self.device = None
+        self.__start__()
