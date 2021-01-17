@@ -2,7 +2,6 @@
 *.lock
 /build
 /dist
-source/
 
 # Protect key files
 .github_token
