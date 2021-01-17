@@ -7,5 +7,3 @@
 .github_token
 /.idea/
 */__pycache__/
-make.bat
-Makefile
