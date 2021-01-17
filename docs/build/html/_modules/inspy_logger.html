@@ -1,0 +1,633 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>inspy_logger &mdash; InSPyLogger 2.0.1a1 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> InSPyLogger
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <!-- Local TOC -->
+              <div class="local-toc"></div>
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">InSPyLogger</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="index.html">Module code</a> &raquo;</li>
+        
+      <li>inspy_logger</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for inspy_logger</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python3</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">This package contains a class that will create and maintain a logging device for you</span>
+
+<span class="sd">Returns:</span>
+<span class="sd">    InspyLogger: A colored and formatted logging device.</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">logging</span><span class="o">,</span> <span class="nn">colorlog</span><span class="o">,</span> <span class="nn">inspect</span>
+<span class="kn">from</span> <span class="nn">colorlog</span> <span class="kn">import</span> <span class="n">ColoredFormatter</span>
+<span class="kn">from</span> <span class="nn">logging</span> <span class="kn">import</span> <span class="n">DEBUG</span><span class="p">,</span> <span class="n">INFO</span><span class="p">,</span> <span class="n">WARNING</span><span class="p">,</span> <span class="n">getLogger</span><span class="p">,</span> <span class="n">Logger</span>
+
+<span class="kn">from</span> <span class="nn">urllib.error</span> <span class="kn">import</span> <span class="n">URLError</span>
+<span class="kn">import</span> <span class="nn">pkg_resources</span>
+<span class="kn">from</span> <span class="nn">pkg_resources</span> <span class="kn">import</span> <span class="n">DistributionNotFound</span>
+<span class="kn">from</span> <span class="nn">packaging</span> <span class="kn">import</span> <span class="n">version</span> <span class="k">as</span> <span class="n">pkg_ver</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">luddite</span>
+<span class="kn">from</span> <span class="nn">luddite</span> <span class="kn">import</span> <span class="n">get_version_pypi</span><span class="p">,</span> <span class="n">get_versions_pypi</span>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">import</span> <span class="nn">inspect</span>
+<span class="kn">from</span> <span class="nn">inspy_logger.errors</span> <span class="kn">import</span> <span class="n">ManifestEntryExistsError</span>
+
+<span class="c1">#####################################</span>
+<span class="c1">## MOST ACCURATE VERSION INDICATOR ##</span>
+<span class="c1">#####################################</span>
+
+<span class="n">RELEASE</span> <span class="o">=</span> <span class="s2">&quot;2.0.1-beta.1&quot;</span>
+
+<span class="n">VERSION</span> <span class="o">=</span> <span class="s2">&quot;2.0.1&quot;</span>
+
+<span class="n">ON_REPO</span> <span class="o">=</span> <span class="kc">False</span>
+
+<span class="c1">#####################################</span>
+<span class="c1">######## VERSION DATA ABOVE! ########</span>
+<span class="c1">#####################################</span>
+
+<span class="n">pretty_name</span> <span class="o">=</span> <span class="s2">&quot;InSPy Logger&quot;</span>
+<span class="n">PKG_NAME</span> <span class="o">=</span> <span class="n">__package__</span>
+<span class="n">PY_VER</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">version</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+
+<span class="n">LEVELS</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;debug&quot;</span><span class="p">,</span> <span class="s2">&quot;info&quot;</span><span class="p">,</span> <span class="s2">&quot;warning&quot;</span><span class="p">]</span>
+<span class="sd">&quot;&quot;&quot;The names of the log output levels one can pick from&quot;&quot;&quot;</span>
+
+<span class="n">latest_version</span> <span class="o">=</span> <span class="s2">&quot;Please start the InspyLogger class&quot;</span>
+
+<span class="n">islatest</span> <span class="o">=</span> <span class="kc">None</span>
+
+
+<div class="viewcode-block" id="InspyLogger"><a class="viewcode-back" href="../index.html#inspy_logger.InspyLogger">[docs]</a><span class="k">class</span> <span class="nc">InspyLogger</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<div class="viewcode-block" id="InspyLogger.Version"><a class="viewcode-back" href="../index.html#inspy_logger.InspyLogger.Version">[docs]</a>    <span class="k">class</span> <span class="nc">Version</span><span class="p">:</span>
+        <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+            <span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">            This class helps manage the Version information for InspyLogger</span>
+
+<span class="sd">            &quot;&quot;&quot;</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">package_name</span> <span class="o">=</span> <span class="s2">&quot;InSPy-Logger&quot;</span>
+            <span class="sd">&quot;&quot;&quot;The name of the program&quot;&quot;&quot;</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">local</span> <span class="o">=</span> <span class="n">VERSION</span>
+            <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            The hard-coded version of the program. Unless this is changed by someone </span>
+<span class="sd">            other than the developers </span>
+<span class="sd">            &quot;&quot;&quot;</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">needs_update</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            A variable </span>
+<span class="sd">            &quot;&quot;&quot;</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">optional_update</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">latest_stable</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">latest_pr</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">offline</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="k">def</span> <span class="nf">__instruction_feeder</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">instruct_group</span><span class="p">:</span><span class="nb">list</span><span class="p">):</span>
+            <span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">            Args:</span>
+<span class="sd">                instruct_group (list):</span>
+<span class="sd">            &quot;&quot;&quot;</span>
+            <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">instruct_group</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+
+<div class="viewcode-block" id="InspyLogger.Version.is_up_to_date"><a class="viewcode-back" href="../index.html#inspy_logger.InspyLogger.Version.is_up_to_date">[docs]</a>        <span class="k">def</span> <span class="nf">is_up_to_date</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+            <span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">            Checks with PyPi to make sure you have the latest version.</span>
+
+<span class="sd">            Returns:</span>
+<span class="sd">                This function will return three fields with varying values which are the following in respective order:</span>
+<span class="sd">                    - Is the local version at least up to date with the latest stable version found on PyPi? (In the form of a boolean)</span>
+<span class="sd">                    - A string that best matches the update status of InspyLogger. </span>
+<span class="sd">                        </span>
+<span class="sd">                        The possible values are:</span>
+<span class="sd">                            - match: Matches the lastest stable version, not pre-release</span>
+<span class="sd">                            - pr_ver: The version number is a pre-release, as it&#39;s number is greater than the latest stable copy available on Pypi</span>
+<span class="sd">                            - not_released: The version number not only exceeds the latest stable version on PyPi but also the latest Pre-Release copy available on PyPi</span>
+<span class="sd">                            - outdated: The version number is less than the latest stable version available on PyPi</span>
+<span class="sd">                </span>
+<span class="sd">                One of three possible results:</span>
+<span class="sd">                </span>
+<span class="sd">                    - (True (bool), &quot;match&quot;, VERSION): Indicates that this version number matches the copy on PyPi</span>
+<span class="sd">                    - (True (bool), &quot;pr_ver&quot;, VERSION): Indicates that a &quot;Pre-Release&quot; version of InSPy-Logger is being used and matches a release found on PyPi</span>
+<span class="sd">                    - (False (bool), &quot;not_released&quot;, VERSION): Indicates that this version number surpasses the highest available on PyPi</span>
+<span class="sd">                    - (False (bool), &quot;outdated&quot;, VERSION):  Indicates that this version number is lower than the latest stable version on PyPi</span>
+<span class="sd">                   </span>
+<span class="sd">            &quot;&quot;&quot;</span>
+
+            <span class="n">latest</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_latest</span><span class="p">()</span>
+
+            <span class="k">if</span> <span class="n">latest</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">offline</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">latest_stable</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;Unknown&quot;</span><span class="p">,</span> <span class="s2">&quot;Offline&quot;</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">latest_pr</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;Unknown&quot;</span><span class="p">,</span> <span class="s2">&quot;Offline&quot;</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">needs_update</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;Unknown&quot;</span><span class="p">,</span> <span class="s2">&quot;Offline&quot;</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">optional_update</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">offline</span><span class="p">:</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">needs_update</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">needs_update</span><span class="p">:</span>
+                        <span class="n">notif_lines</span> <span class="o">=</span> <span class="p">[</span>
+                            <span class="s2">&quot;An update for InSPy-Logger is available! Please update!&quot;</span><span class="p">,</span>
+                            <span class="s2">&quot;You can update in one of the following ways:&quot;</span>
+                        <span class="p">]</span>
+
+                        <span class="n">direct_update_instructions</span> <span class="o">=</span> <span class="p">[</span>
+                            <span class="s2">&quot;    - Through the package itself:&quot;</span><span class="p">,</span>
+                            <span class="s2">&quot;        from inspy_logger import InspyLogger, LogDevice&quot;</span><span class="p">,</span>
+                            <span class="s2">&quot;        &quot;</span><span class="p">,</span>
+                            <span class="s2">&quot;        i_log = InspyLogger()&quot;</span><span class="p">,</span>
+                            <span class="s2">&quot;        iLog_ver = i_log.Version()&quot;</span><span class="p">,</span>
+                            <span class="s2">&quot;        iLog_ver.update(pr=False)&quot;</span><span class="p">,</span>
+                        <span class="p">]</span>
+
+                        <span class="n">pypi_update_instructions</span> <span class="o">=</span> <span class="p">[</span>
+                            <span class="s2">&quot;    - Through your system&#39;s implementation of PIP&quot;</span><span class="p">,</span>
+                            <span class="s2">&quot;        $&gt; python3 -m pip install --update inspy_logger&quot;</span><span class="p">,</span>
+                            <span class="s2">&quot;        OR&quot;</span><span class="p">,</span>
+                            <span class="s2">&quot;        $&gt; python3 -m pip install inspy_logger VER&quot;</span>
+                        <span class="p">]</span>
+
+                        <span class="n">border</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="s2">&quot;*-*&quot;</span> <span class="o">*</span> <span class="mi">20</span><span class="p">)</span>
+                        <span class="n">mid_rule</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="s2">&quot;-|-&quot;</span> <span class="o">*</span> <span class="mi">20</span><span class="p">)</span>
+
+                        <span class="c1"># Notify the user through the console of an update being available.</span>
+                        <span class="nb">print</span><span class="p">(</span><span class="n">notif_lines</span><span class="p">)</span>
+
+                        <span class="nb">print</span><span class="p">(</span><span class="n">border</span><span class="p">)</span>
+
+                        <span class="bp">self</span><span class="o">.</span><span class="n">__instruction_feeder</span><span class="p">(</span><span class="n">direct_update_instructions</span><span class="p">)</span>
+
+                        <span class="nb">print</span><span class="p">(</span><span class="n">mid_rule</span><span class="p">)</span>
+
+                        <span class="bp">self</span><span class="o">.</span><span class="n">__instruction_feeder</span><span class="p">(</span><span class="n">pypi_update_instructions</span><span class="p">)</span>
+
+                        <span class="nb">print</span><span class="p">(</span><span class="n">border</span><span class="p">)</span>
+
+                        <span class="k">return</span> <span class="kc">False</span><span class="p">,</span> <span class="s2">&quot;outdated&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">local</span>
+
+            <span class="c1"># If the constant ON_REPO is Bool(False) we&#39;ll assume it&#39;s a pre-release</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">ON_REPO</span><span class="p">:</span>
+                <span class="k">return</span> <span class="kc">True</span><span class="p">,</span> <span class="s2">&quot;pr_ver&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">local</span></div>
+
+<div class="viewcode-block" id="InspyLogger.Version.get_latest"><a class="viewcode-back" href="../index.html#inspy_logger.InspyLogger.Version.get_latest">[docs]</a>        <span class="k">def</span> <span class="nf">get_latest</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">offline</span> <span class="o">=</span> <span class="kc">False</span>
+                <span class="k">return</span> <span class="n">get_version_pypi</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">package_name</span><span class="p">)</span>
+            <span class="k">except</span> <span class="n">URLError</span><span class="p">:</span>
+                <span class="n">statement</span> <span class="o">=</span> <span class="s2">&quot;Unable to connect to the internet, therefore I can&#39;t get remote version data&quot;</span>
+                <span class="nb">print</span><span class="p">(</span><span class="n">statement</span><span class="p">)</span>
+                <span class="n">ver</span> <span class="o">=</span> <span class="s2">&quot;Unknown&quot;</span>
+                <span class="n">is_latest</span> <span class="o">=</span> <span class="kc">False</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">offline</span> <span class="o">=</span> <span class="kc">True</span>
+                <span class="k">return</span> <span class="kc">None</span>
+            <span class="k">except</span> <span class="n">DistributionNotFound</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+                <span class="n">ver</span> <span class="o">=</span> <span class="s2">&quot;Unknown&quot;</span>
+                <span class="n">is_latest</span> <span class="o">=</span> <span class="kc">False</span>
+
+            <span class="k">return</span> <span class="n">ver</span><span class="p">,</span> <span class="n">is_latest</span></div></div>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">loc_version</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Version</span><span class="p">()</span>  <span class="c1"># &#39;loc&#39; = short for &#39;local&#39; for the curious</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">VERSION</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">loc_version</span><span class="o">.</span><span class="n">local</span>
+
+    <span class="k">def</span> <span class="nf">__get_version</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pkg_name</span><span class="p">):</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">loc_version</span><span class="o">.</span><span class="n">is_up_to_date</span><span class="p">:</span>
+            <span class="n">update_statement</span> <span class="o">=</span> <span class="s2">&quot;You are up to date!&quot;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">pkg_ver</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">VERSION</span><span class="p">))</span> <span class="o">&lt;</span> <span class="n">pkg_ver</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">get_version_pypi</span><span class="p">(</span><span class="n">pkg_name</span><span class="p">))):</span>
+                <span class="n">update_statement</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;You are running an older version of </span><span class="si">{</span><span class="n">pkg_name</span><span class="si">}</span><span class="s2"> than what is available. Consider upgrading.&quot;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">VERSION</span> <span class="ow">in</span> <span class="n">get_versions_pypi</span><span class="p">(</span><span class="n">pkg_name</span><span class="p">):</span>
+                    <span class="n">avail_ver</span> <span class="o">=</span> <span class="p">(</span>
+                        <span class="s2">&quot;, a developmental version available via the PyPi repository&quot;</span>
+                    <span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">avail_ver</span> <span class="o">=</span> <span class="p">(</span>
+                        <span class="s2">&quot;, a version that is NOT available via any online package manager&quot;</span>
+                    <span class="p">)</span>
+                <span class="n">update_statement</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;You are running a version of </span><span class="si">{</span><span class="n">pkg_name</span><span class="si">}</span><span class="s2"> that is newer than the latest version</span><span class="si">{</span><span class="n">avail_ver</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="n">update_statement</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">The versions available from PyPi are: </span><span class="si">{</span><span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">get_versions_pypi</span><span class="p">(</span><span class="n">pkg_name</span><span class="p">))</span><span class="si">}</span><span class="s2">&quot;</span>
+
+        <span class="n">ver</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">pretty_name</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">VERSION</span><span class="si">}</span><span class="s2">) using Python </span><span class="si">{</span><span class="n">PY_VER</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">update_statement</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="n">ver</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">ver</span>
+
+<div class="viewcode-block" id="InspyLogger.LogDevice"><a class="viewcode-back" href="../index.html#inspy_logger.InspyLogger.LogDevice">[docs]</a>    <span class="k">class</span> <span class="nc">LogDevice</span><span class="p">(</span><span class="n">Logger</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Starts a colored and formatted logging device for you.</span>
+
+<span class="sd">        Starts a colored and formatted logging device for you. No need to worry about handlers, etc</span>
+
+<span class="sd">        Args:</span>
+
+<span class="sd">            device_name (str): A string containing the name you&#39;d like to choose for the root logger</span>
+
+<span class="sd">            log_level (str): A string containing the name of the level you&#39;d like InspyLogger to be limited to. You can choose between:</span>
+
+<span class="sd">            - debug</span>
+<span class="sd">            - info</span>
+<span class="sd">            - warning</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">def</span> <span class="nf">__add_child</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+
+            <span class="c1"># Start a logger for this function</span>
+            <span class="n">log</span> <span class="o">=</span> <span class="n">getLogger</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">own_logger_root_name</span> <span class="o">+</span> <span class="s2">&quot;.add_child&quot;</span><span class="p">)</span>
+            <span class="n">ts</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+            <span class="n">frame</span> <span class="o">=</span> <span class="n">inspect</span><span class="o">.</span><span class="n">stack</span><span class="p">()[</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">frame_name</span> <span class="o">=</span> <span class="n">frame</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span>
+            <span class="n">line_no</span> <span class="o">=</span> <span class="n">frame</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+            <span class="n">file_name</span> <span class="o">=</span> <span class="n">frame</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+
+            <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Received request to add </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2"> to </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">root_name</span><span class="si">}</span><span class="s2"> by </span><span class="si">{</span><span class="n">frame_name</span><span class="si">}</span><span class="s2"> on line </span><span class="si">{</span><span class="n">line_no</span><span class="si">}</span><span class="s2"> of </span><span class="si">{</span><span class="n">file_name</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">)</span>
+            <span class="n">log</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Full Frame Info&quot;</span><span class="p">)</span>
+
+            <span class="n">existing</span> <span class="o">=</span> <span class="nb">next</span><span class="p">((</span><span class="n">sub</span> <span class="k">for</span> <span class="n">sub</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">manifest</span> <span class="k">if</span> <span class="n">sub</span><span class="p">[</span><span class="s1">&#39;child_name&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="n">name</span><span class="o">.</span><span class="n">lower</span><span class="p">()),</span> <span class="kc">None</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">existing</span><span class="p">:</span>
+
+                <span class="n">c_log</span> <span class="o">=</span> <span class="n">getLogger</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">own_logger_root_name</span> <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot;.</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+                <span class="c1"># Assemble a manifest entry.</span>
+                <span class="n">manifest_entry</span> <span class="o">=</span> <span class="p">{</span>
+                    <span class="s2">&quot;child_name&quot;</span><span class="p">:</span> <span class="n">name</span><span class="p">,</span>
+                    <span class="s2">&quot;caller_file&quot;</span><span class="p">:</span> <span class="n">file_name</span><span class="p">,</span>
+                    <span class="s2">&quot;calling_line&quot;</span><span class="p">:</span> <span class="n">line_no</span><span class="p">,</span>
+                    <span class="s2">&quot;created_ts&quot;</span><span class="p">:</span> <span class="n">ts</span><span class="p">,</span>
+                    <span class="s2">&quot;log_object&quot;</span><span class="p">:</span> <span class="n">c_log</span>
+                <span class="p">}</span>
+
+                <span class="bp">self</span><span class="o">.</span><span class="n">manifest</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">manifest_entry</span><span class="p">)</span>
+
+                <span class="k">return</span> <span class="n">manifest_entry</span><span class="p">[</span><span class="s2">&quot;log_object&quot;</span><span class="p">]</span>
+
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">ManifestEntryExistsError</span><span class="p">()</span>
+
+<div class="viewcode-block" id="InspyLogger.LogDevice.add_child"><a class="viewcode-back" href="../index.html#inspy_logger.InspyLogger.LogDevice.add_child">[docs]</a>        <span class="k">def</span> <span class="nf">add_child</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">            Create (and return) a child logger under the root log device. Also add it to the manifest to keep track of it.</span>
+
+<span class="sd">            Args:</span>
+<span class="sd">                name (str): The name you&#39;d like to give the child logger</span>
+
+<span class="sd">            Returns:</span>
+<span class="sd">                getLogger: A child logging device.</span>
+<span class="sd">            </span>
+<span class="sd">            &quot;&quot;&quot;</span>
+
+            <span class="k">try</span><span class="p">:</span>
+
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__add_child</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+
+            <span class="k">except</span> <span class="n">ManifestEntryExistsError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">message</span><span class="p">)</span>
+                <span class="c1"># ToDo: Set up logger to tell user what&#39;s happening</span>
+                <span class="k">for</span> <span class="n">entry</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">manifest</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">entry</span><span class="p">[</span><span class="s1">&#39;child_name&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">name</span><span class="p">:</span>
+                        <span class="k">return</span> <span class="n">entry</span><span class="p">[</span><span class="s1">&#39;log_object&#39;</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="InspyLogger.LogDevice.clear_manifest"><a class="viewcode-back" href="../index.html#inspy_logger.InspyLogger.LogDevice.clear_manifest">[docs]</a>        <span class="k">def</span> <span class="nf">clear_manifest</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">flush_to_disk</span><span class="p">:</span><span class="nb">bool</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                           <span class="n">fp_prefix</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;~/Inspyre-Softworks/InSPy-Logger/manifests/&quot;</span><span class="p">,</span>
+                           <span class="n">file_name</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span><span class="si">}</span><span class="s2">.txt&quot;</span><span class="p">):</span>
+            <span class="n">log</span> <span class="o">=</span> <span class="n">getLogger</span><span class="p">(</span><span class="n">PKG_NAME</span> <span class="o">+</span> <span class="s2">&quot;.clear_manifest&quot;</span><span class="p">)</span>
+            <span class="n">log</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Received request to clear the manifest&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">flush_to_disk</span><span class="p">:</span>
+                <span class="n">log</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Received request to flush existing manifest to disk first&quot;</span><span class="p">)</span>
+                <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">fp_prefix</span> <span class="o">+</span> <span class="n">file_name</span><span class="p">,</span> <span class="s2">&quot;w+&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">fp</span><span class="p">:</span>
+                    <span class="n">fp</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">manifest</span><span class="p">)</span>
+
+                <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Flushed manifest to </span><span class="si">{</span><span class="n">fp_prefix</span><span class="si">}{</span><span class="n">file_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">manifest</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Cleared manifest!&quot;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="InspyLogger.LogDevice.adjust_level"><a class="viewcode-back" href="../index.html#inspy_logger.InspyLogger.LogDevice.adjust_level">[docs]</a>        <span class="k">def</span> <span class="nf">adjust_level</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">l_lvl</span><span class="o">=</span><span class="s2">&quot;info&quot;</span><span class="p">,</span> <span class="n">silence_notif</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+            <span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">            Adjust the level of the logger associated with this instance.</span>
+
+<span class="sd">            Args:</span>
+<span class="sd">                l_lvl (str): A string containing the name of the level you&#39;d like InspyLogger to be limited to. You can choose between:</span>
+
+<span class="sd">                - debug</span>
+<span class="sd">                - info</span>
+<span class="sd">                - warning</span>
+
+<span class="sd">                silence_notif (bool): Silence notifications (of &#39;info&#39; level) when adjusting the logger&#39;s level. True for</span>
+<span class="sd">                no output and False to get these notifications.</span>
+
+<span class="sd">            Returns:</span>
+<span class="sd">                None</span>
+
+<span class="sd">            &quot;&quot;&quot;</span>
+
+            <span class="n">_log</span> <span class="o">=</span> <span class="n">getLogger</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">root_name</span><span class="p">)</span>
+
+            <span class="n">_caller</span> <span class="o">=</span> <span class="n">inspect</span><span class="o">.</span><span class="n">stack</span><span class="p">()[</span><span class="mi">1</span><span class="p">][</span><span class="mi">3</span><span class="p">]</span>
+
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">last_lvl_change_by</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">_log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Setting logger level for first time&quot;</span><span class="p">)</span>
+                <span class="n">_log</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Signing in&quot;</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">last_lvl_change_by</span> <span class="o">=</span> <span class="s2">&quot;Starting Logger&quot;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">silence_notif</span><span class="p">:</span>
+                    <span class="n">_log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">_caller</span><span class="si">}</span><span class="s2"> is changing logger level from </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">l_lvl</span><span class="si">}</span><span class="s2"> to </span><span class="si">{</span><span class="n">l_lvl</span><span class="si">}</span><span class="s2">&quot;</span>
+                    <span class="p">)</span>
+                    <span class="n">_log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;Last level change was implemented by: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">last_lvl_change_by</span><span class="si">}</span><span class="s2">&quot;</span>
+                    <span class="p">)</span>
+                    <span class="n">_log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Updating last level changer&quot;</span><span class="p">)</span>
+
+                <span class="bp">self</span><span class="o">.</span><span class="n">last_lvl_change_by</span> <span class="o">=</span> <span class="n">_caller</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">l_lvl</span> <span class="o">=</span> <span class="n">l_lvl</span>
+
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">l_lvl</span> <span class="o">==</span> <span class="s2">&quot;debug&quot;</span><span class="p">:</span>
+                <span class="n">_</span> <span class="o">=</span> <span class="n">DEBUG</span>
+            <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">l_lvl</span> <span class="o">==</span> <span class="s2">&quot;info&quot;</span><span class="p">:</span>
+                <span class="n">_</span> <span class="o">=</span> <span class="n">INFO</span>
+            <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">l_lvl</span> <span class="o">==</span> <span class="s2">&quot;warn&quot;</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">l_lvl</span> <span class="o">==</span> <span class="s2">&quot;warning&quot;</span><span class="p">:</span>
+                <span class="n">_</span> <span class="o">=</span> <span class="n">WARNING</span>
+
+            <span class="n">_log</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">_</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="InspyLogger.LogDevice.start"><a class="viewcode-back" href="../index.html#inspy_logger.InspyLogger.LogDevice.start">[docs]</a>        <span class="k">def</span> <span class="nf">start</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mute</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">no_version</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+            <span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">            Start the actual logging instance and fill the attributes that __init__ creates.</span>
+
+<span class="sd">            Arguments:</span>
+
+<span class="sd">                mute (bool): Mute all output that starting the root-logger would produce. True: No output on executing start() | False: Do not suppress all output</span>
+
+<span class="sd">                no_version (bool): If you start the logger using the &#39;debug&#39; log-level the logger will output its own version information. True: Suppress this output, no matter the log-level | False: Do no suppress this output</span>
+
+<span class="sd">            Note:</span>
+<span class="sd">                If you give the &#39;mute&#39; parameter a value of `True` then the value of the `no_version` parameter will be ignored.</span>
+
+<span class="sd">            Returns:</span>
+<span class="sd">                None</span>
+
+<span class="sd">            &quot;&quot;&quot;</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">started</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                    <span class="s2">&quot;There already is a base logger for this program. I am using it to deliver this message.&quot;</span>
+                <span class="p">)</span>
+                <span class="k">return</span> <span class="kc">None</span>
+
+            <span class="n">formatter</span> <span class="o">=</span> <span class="n">ColoredFormatter</span><span class="p">(</span>
+                <span class="s2">&quot;</span><span class="si">%(bold_cyan)s%(asctime)-s%(reset)s%(log_color)s</span><span class="s2">::</span><span class="si">%(name)s</span><span class="s2">.</span><span class="si">%(module)-14s</span><span class="s2">::</span><span class="si">%(levelname)-10s%(reset)s</span><span class="s2">%(&quot;</span>
+                <span class="s2">&quot;blue)s</span><span class="si">%(message)-s</span><span class="s2">&quot;</span><span class="p">,</span>
+                <span class="n">datefmt</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                <span class="n">reset</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="n">log_colors</span><span class="o">=</span><span class="p">{</span>
+                    <span class="s2">&quot;DEBUG&quot;</span><span class="p">:</span> <span class="s2">&quot;bold_cyan&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;INFO&quot;</span><span class="p">:</span> <span class="s2">&quot;bold_green&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;WARNING&quot;</span><span class="p">:</span> <span class="s2">&quot;bold_yellow&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;ERROR&quot;</span><span class="p">:</span> <span class="s2">&quot;bold_red&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;CRITICAL&quot;</span><span class="p">:</span> <span class="s2">&quot;bold_red&quot;</span><span class="p">,</span>
+                <span class="p">},</span>
+            <span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">device</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">root_name</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">main_handler</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">StreamHandler</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">main_handler</span><span class="o">.</span><span class="n">setFormatter</span><span class="p">(</span><span class="n">formatter</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="o">.</span><span class="n">addHandler</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">main_handler</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">adjust_level</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">l_lvl</span><span class="p">)</span>
+            <span class="n">_log_</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">own_logger_root_name</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">mute</span><span class="p">:</span>
+                <span class="n">_log_</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Logger started for %s&quot;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">root_name</span><span class="p">)</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">no_version</span><span class="p">:</span>
+                    <span class="n">_log_</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Logger Info:</span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">+</span> <span class="p">(</span><span class="s2">&quot;*&quot;</span> <span class="o">*</span> <span class="mi">35</span><span class="p">)</span> <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="si">{</span><span class="n">VERSION</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">+</span> <span class="p">(</span><span class="s2">&quot;*&quot;</span> <span class="o">*</span> <span class="mi">35</span><span class="p">)</span>
+                    <span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">started</span> <span class="o">=</span> <span class="kc">True</span>
+
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">device</span></div>
+
+        <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">device_name</span><span class="p">,</span> <span class="n">log_level</span><span class="p">):</span>
+            <span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">            Starts a colored and formatted logging device for you. No need to worry about handlers, etc</span>
+
+<span class="sd">            Args:</span>
+
+<span class="sd">                device_name (str): A string containing the name you&#39;d like to choose for the root logger</span>
+
+<span class="sd">                log_level (str): A string containing the name of the level you&#39;d like InspyLogger to be limited to.</span>
+
+<span class="sd">                You can choose between:</span>
+<span class="sd">                - debug</span>
+<span class="sd">                - info</span>
+<span class="sd">                - warning</span>
+<span class="sd">            &quot;&quot;&quot;</span>
+
+            <span class="k">if</span> <span class="n">log_level</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">log_level</span> <span class="o">=</span> <span class="s2">&quot;info&quot;</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">l_lvl</span> <span class="o">=</span> <span class="n">log_level</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">root_name</span> <span class="o">=</span> <span class="n">device_name</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">own_logger_root_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">root_name</span> <span class="o">+</span> <span class="s2">&quot;.InspyLogger&quot;</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">started</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">last_lvl_change_by</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">device</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">manifest</span> <span class="o">=</span> <span class="p">[]</span></div></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2021, Taylor-Jayde J. Blackstone.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>
